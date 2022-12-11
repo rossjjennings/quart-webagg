@@ -4,21 +4,18 @@ from quart import (
     make_response,
     request,
     url_for,
-    send_from_directory,
     websocket,
-    g,
 )
 import numpy as np
 import matplotlib as mpl
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_webagg import FigureManagerWebAgg
-import os.path
 import asyncio
 import io
 
-from figure import FigWrapper
+from sculptor import Sculptor, FigWrapper
 
 app = Quart(__name__)
+sc = Sculptor(app)
 
 image_mimetypes = {
     'eps': 'application/postscript',
@@ -49,7 +46,7 @@ async def ws():
     
     async with asyncio.TaskGroup() as tg:
         global fw
-        fw = FigWrapper(tg, 1, fig)
+        fw = FigWrapper(1, fig, app, tg)
         tg.create_task(fw.receive_messages())
 
 @app.route('/download.<fmt>')
@@ -62,30 +59,6 @@ async def download(fmt):
     except KeyError:
         response.mimetype = 'application/octet-stream'
     return response
-
-@app.route('/mpl.js')
-async def mpl_js():
-    js = FigureManagerWebAgg.get_javascript()
-    response = await make_response(js)
-    response.mimetype = 'text/javascript'
-    return response
-
-@app.route('/mpl_figure.js')
-async def mpl_figure_js():
-    js = await render_template('mpl_figure.js', sock_uri=url_for('ws'), fig_id=1, elt_id='figure1')
-    response = await make_response(js)
-    response.mimetype = 'text/javascript'
-    return response
-
-@app.route('/_static/<path:path>')
-async def webagg_static(path):
-    webagg_static_path = FigureManagerWebAgg.get_static_file_path()
-    return await send_from_directory(webagg_static_path, path)
-
-@app.route('/_images/<path:path>')
-async def webagg_images(path):
-    webagg_image_path = os.path.join(mpl.get_data_path(), 'images')
-    return await send_from_directory(webagg_image_path, path)
 
 if __name__ == '__main__':
     app.run()
