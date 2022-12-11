@@ -6,6 +6,7 @@ from quart import (
     url_for,
     send_from_directory,
     websocket,
+    g,
 )
 import numpy as np
 import matplotlib as mpl
@@ -13,10 +14,26 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_webagg import FigureManagerWebAgg
 import os.path
 import asyncio
+import io
 
 from figure import FigWrapper
 
 app = Quart(__name__)
+
+image_mimetypes = {
+    'eps': 'application/postscript',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'pdf': 'application/pdf',
+    'pgf': 'application/x-latex',
+    'png': 'image/png',
+    'ps': 'application/postscript',
+    'svg': 'image/svg+xml',
+    'svgz': 'image/svg+xml',
+    'tif': 'image/tiff',
+    'tiff': 'image/tiff',
+    'webp': 'image/webp',
+}
 
 @app.route('/')
 async def hello_world():
@@ -31,7 +48,19 @@ async def ws():
     ax.plot(t, s)
     
     async with asyncio.TaskGroup() as tg:
+        global fw
         fw = FigWrapper(tg, 1, fig)
+
+@app.route('/download.<fmt>')
+async def download(fmt):
+    buff = io.BytesIO()
+    fw.manager.canvas.figure.savefig(buff, format=fmt)
+    response = await make_response(buff.getvalue())
+    try:
+        response.mimetype = image_mimetypes[fmt]
+    except KeyError:
+        response.mimetype = 'application/octet-stream'
+    return response
 
 @app.route('/mpl.js')
 async def mpl_js():
