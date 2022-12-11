@@ -6,6 +6,7 @@ from quart import (
     send_from_directory,
 )
 import matplotlib as mpl
+from matplotlib.figure import Figure
 from matplotlib.backends.backend_webagg import (
     FigureManagerWebAgg,
     new_figure_manager_given_figure,
@@ -13,6 +14,7 @@ from matplotlib.backends.backend_webagg import (
 import json
 import os.path
 import io
+import asyncio
 
 image_mimetypes = {
     'eps': 'application/postscript',
@@ -32,6 +34,11 @@ image_mimetypes = {
 class Sculptor:
     def __init__(self, app):
         self.app = app
+        self.app.add_websocket(
+            '/ws',
+            'websocket',
+            self.handle_websocket,
+        )
         self.app.add_url_rule(
             '/_static/<path:path>',
             'webagg_static',
@@ -52,6 +59,19 @@ class Sculptor:
             'mpl_figure_js',
             self.handle_mpl_figure_js,
         )
+        self.wrapped_figures = []
+
+    def figure(self, wrapped_func):
+        fig = Figure()
+        fig_id = len(self.wrapped_figures) + 1
+        fw = FigWrapper(fig_id, wrapped_func(fig), self.app)
+        self.wrapped_figures.append(fw)
+
+    async def handle_websocket(self):
+        async with asyncio.TaskGroup() as tg:
+            for fw in self.wrapped_figures:
+                fw.register_callbacks(tg)
+                tg.create_task(fw.receive_messages())
 
     async def handle_webagg_static(self, path):
         webagg_static_path = FigureManagerWebAgg.get_static_file_path()
@@ -70,7 +90,7 @@ class Sculptor:
     async def handle_mpl_figure_js(self):
         js = await render_template(
             'mpl_figure.js',
-            sock_uri=url_for('ws'),
+            sock_uri=url_for('websocket'),
             fig_id=1,
             elt_id='figure1'
         )
