@@ -50,6 +50,7 @@ async def ws():
     async with asyncio.TaskGroup() as tg:
         global fw
         fw = FigWrapper(tg, 1, fig)
+        tg.create_task(fw.receive_messages())
 
 @app.route('/download.<fmt>')
 async def download(fmt):

@@ -9,7 +9,6 @@ class FigWrapper:
         self.manager = new_figure_manager_given_figure(fig_id, self.fig)
         self.supports_binary = True
         self.manager.add_web_socket(self)
-        tg.create_task(self.receive_messages())
 
     async def receive_messages(self):
         while True:
