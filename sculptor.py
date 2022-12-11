@@ -79,25 +79,33 @@ class Sculptor:
         return response
 
 class FigWrapper:
-    def __init__(self, fig_id, fig, app, tg):
+    def __init__(self, fig_id, fig, app):
         self.fig_id = fig_id
         self.fig = fig
         self.app = app
-        self.tg = tg
+        self.task_group = None
         self.manager = new_figure_manager_given_figure(fig_id, fig)
         self.supports_binary = True
+        self.app.add_url_rule(
+            '/download.<fmt>',
+            'download',
+            self.handle_download,
+        )
+
+    def register_callbacks(self, task_group):
+        self.task_group = task_group
         self.manager.add_web_socket(self)
 
     def send_json(self, content):
-        self.tg.create_task(websocket.send_json(content))
+        self.task_group.create_task(websocket.send_json(content))
 
     def send_binary(self, blob):
         if self.supports_binary:
-            self.tg.create_task(websocket.send(blob))
+            self.task_group.create_task(websocket.send(blob))
         else:
             data_uri = "data:image/png;base64,{0}".format(
                 blob.encode('base64').replace('\n', ''))
-            self.tg.create_task(websocket.send(data_uri))
+            self.task_group.create_task(websocket.send(data_uri))
 
     async def receive_messages(self):
         while True:
