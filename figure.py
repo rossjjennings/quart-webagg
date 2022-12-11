@@ -12,9 +12,6 @@ class FigWrapper:
         print(f"Toolbar is: {self.manager.toolbar}")
         tg.create_task(self.receive_messages())
 
-    def send_message(self, message):
-        self.tg.create_task(websocket.send(message))
-        
     async def receive_messages(self):
         while True:
             message = await websocket.receive_json()
@@ -26,13 +23,13 @@ class FigWrapper:
 
     def send_json(self, content):
         print(f"Sending JSON {content}")
-        self.send_message(json.dumps(content))
+        self.tg.create_task(websocket.send_json(content))
 
     def send_binary(self, blob):
         print(f"Sending blob")
         if self.supports_binary:
-            self.send_message(blob)
+            self.tg.create_task(websocket.send(blob))
         else:
             data_uri = "data:image/png;base64,{0}".format(
                 blob.encode('base64').replace('\n', ''))
-            self.write_message(data_uri)
+            self.tg.create_task(websocket.send(data_uri))
