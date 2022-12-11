@@ -12,7 +12,7 @@ sc = Sculptor(app)
 async def index():
     return await render_template('index.html')
 
-@sc.figure
+@sc.figure('figure1')
 def make_figure(fig):
     ax = fig.add_subplot()
     t = np.arange(0.0, 3.0, 0.01)

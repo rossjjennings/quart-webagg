@@ -61,11 +61,13 @@ class Sculptor:
         )
         self.wrapped_figures = []
 
-    def figure(self, wrapped_func):
-        fig = Figure()
-        fig_id = len(self.wrapped_figures) + 1
-        fw = FigWrapper(fig_id, wrapped_func(fig), self.app)
-        self.wrapped_figures.append(fw)
+    def figure(self, name):
+        def inner(wrapped_func):
+            fig = Figure()
+            fig_id = len(self.wrapped_figures) + 1
+            fw = FigWrapper(fig_id, name, wrapped_func(fig), self.app)
+            self.wrapped_figures.append(fw)
+        return inner
 
     async def handle_websocket(self):
         async with asyncio.TaskGroup() as tg:
@@ -91,24 +93,24 @@ class Sculptor:
         js = await render_template(
             'mpl_figure.js',
             sock_uri=url_for('websocket'),
-            fig_id=1,
-            elt_id='figure1'
+            figures=self.wrapped_figures,
         )
         response = await make_response(js)
         response.mimetype = 'text/javascript'
         return response
 
 class FigWrapper:
-    def __init__(self, fig_id, fig, app):
+    def __init__(self, fig_id, name, fig, app):
         self.fig_id = fig_id
+        self.name = name
         self.fig = fig
         self.app = app
         self.task_group = None
         self.manager = new_figure_manager_given_figure(fig_id, fig)
         self.supports_binary = True
         self.app.add_url_rule(
-            '/download.<fmt>',
-            'download',
+            f'/{self.name}.<fmt>',
+            self.name,
             self.handle_download,
         )
 
