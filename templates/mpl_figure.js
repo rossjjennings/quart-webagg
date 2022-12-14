@@ -1,14 +1,13 @@
-/* script for loading matplotlib figure */
+/* script for loading matplotlib figures */
 
 document.addEventListener("DOMContentLoaded", () => {
   var websocket_type = mpl.get_websocket_type();
-  var websocket = new websocket_type("{{ sock_uri }}");
   {% for fig in figures %}
   var {{ fig.name }} = new mpl.figure(
-      {{ fig.fig_id }},
-      websocket,
+      {{ fig.name }},
+      new websocket_type("{{ fig.sock_uri }}"),
       (figure, format) => {
-        window.open('{{ fig.name }}.' + format, '_blank');
+        window.open("{{ fig.name }}." + format, "_blank");
       },
       document.getElementById("{{ fig.name }}")
   );

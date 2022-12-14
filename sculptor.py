@@ -34,11 +34,6 @@ image_mimetypes = {
 class Sculptor:
     def __init__(self, app):
         self.app = app
-        self.app.add_websocket(
-            '/ws',
-            'websocket',
-            self.handle_websocket,
-        )
         self.app.add_url_rule(
             '/_static/<path:path>',
             'webagg_static',
@@ -69,12 +64,6 @@ class Sculptor:
             self.wrapped_figures.append(fw)
         return inner
 
-    async def handle_websocket(self):
-        async with asyncio.TaskGroup() as tg:
-            for fw in self.wrapped_figures:
-                fw.register_callbacks(tg)
-                tg.create_task(fw.receive_messages())
-
     async def handle_webagg_static(self, path):
         webagg_static_path = FigureManagerWebAgg.get_static_file_path()
         return await send_from_directory(webagg_static_path, path)
@@ -90,10 +79,11 @@ class Sculptor:
         return response
 
     async def handle_mpl_figure_js(self):
+        figures = [await fig.get_info() for fig in self.wrapped_figures]
+        print(figures)
         js = await render_template(
             'mpl_figure.js',
-            sock_uri=url_for('websocket'),
-            figures=self.wrapped_figures,
+            figures=figures,
         )
         response = await make_response(js)
         response.mimetype = 'text/javascript'
@@ -110,8 +100,13 @@ class FigWrapper:
         self.supports_binary = True
         self.app.add_url_rule(
             f'/{self.name}.<fmt>',
-            self.name,
+            f'download_{self.name}',
             self.handle_download,
+        )
+        self.app.add_websocket(
+            f'/{self.name}.ws',
+            f'websocket_{self.name}',
+            self.handle_websocket,
         )
 
     def register_callbacks(self, task_group):
@@ -119,9 +114,11 @@ class FigWrapper:
         self.manager.add_web_socket(self)
 
     def send_json(self, content):
+        print(f"Figure {self.fig_id} sending JSON: {content}")
         self.task_group.create_task(websocket.send_json(content))
 
     def send_binary(self, blob):
+        print(f"Figure {self.fig_id} sending blob")
         if self.supports_binary:
             self.task_group.create_task(websocket.send(blob))
         else:
@@ -132,10 +129,16 @@ class FigWrapper:
     async def receive_messages(self):
         while True:
             message = await websocket.receive_json()
+            print(f"Figure {self.fig_id} received JSON: {message}")
             if message['type'] == 'supports_binary':
                 self.supports_binary = message['value']
             else:
                 self.manager.handle_json(message)
+
+    async def handle_websocket(self):
+        async with asyncio.TaskGroup() as tg:
+            self.register_callbacks(tg)
+            tg.create_task(self.receive_messages())
 
     async def handle_download(self, fmt):
         buff = io.BytesIO()
@@ -146,3 +149,8 @@ class FigWrapper:
         except KeyError:
             response.mimetype = 'application/octet-stream'
         return response
+
+    async def get_info(self):
+        sock_name = f'websocket_{self.name}'
+        sock_uri = url_for(sock_name)
+        return {'name': self.name, 'fig_id': self.fig_id, 'sock_uri': sock_uri}
