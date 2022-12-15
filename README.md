@@ -43,7 +43,7 @@ The `index.html` template accompanying the above example should therefore look l
 <html>
   <head>
     {% include 'webagg_head.html' %}
-    <title>matplotlib</title>
+    <title>Quart-WebAgg example</title>
   </head>
   <body>
     <div id="sinusoid" style="width: 640px; margin: auto"></div>
