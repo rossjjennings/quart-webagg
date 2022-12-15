@@ -2,10 +2,10 @@
 Quart-WebbAgg is an extension for [Quart](https://github.com/pallets/quart) which makes it easy to add interactive plots using [Matplotlib](https://github.com/matplotlib/matplotlib)'s [WebAgg](https://matplotlib.org/stable/api/backend_webagg_api.html#module-matplotlib.backends.backend_webagg) backend.
 
 The WebAgg backend is the technology underlying interactive plotting using Matplotlib in [Jupyter](https://jupyter.org/) notebooks.
-Although it is intended to be usable this way, the WebAgg backend has rarely been used to embed plots in third-party web applications.
-As such, Quart-WebAgg also represents a proof of concept that such embedding is possible.
+Under the hood, the WebAgg backend uses a WebSocket to manage communication between the client and server.
+This means that Quart's native support for WebSockets is crucial for interfacing with WebAgg.
 
-Quart-WebAgg relies on [`asyncio.TaskGroup`](https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup) objects in an essential way, so there is a hard dependence on Python 3.11.
+Quart-WebAgg relies on [`asyncio.TaskGroup`](https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup) objects in an essential way, so it has a hard dependence on Python 3.11.
 
 ## Usage
 A simple example of using Quart-WebAgg is below:
