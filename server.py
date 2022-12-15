@@ -5,7 +5,7 @@ import matplotlib as mpl
 from quart_webagg import WebAgg
 
 app = Quart(__name__)
-webagg = WebAgg(app)
+webagg = WebAgg()
 
 @app.route('/')
 async def index():
@@ -28,4 +28,5 @@ async def plot_parabola(fig):
     return fig
 
 if __name__ == '__main__':
+    webagg.init_app(app)
     app.run()

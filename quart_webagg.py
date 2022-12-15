@@ -1,4 +1,5 @@
 from quart import (
+    Blueprint,
     websocket,
     url_for,
     render_template,
@@ -32,35 +33,42 @@ image_mimetypes = {
 }
 
 class WebAgg:
-    def __init__(self, app):
-        self.app = app
-        self.app.add_url_rule(
+    def __init__(self):
+        self.blueprint = Blueprint(
+            'webagg',
+            __name__,
+            template_folder='templates'
+        )
+        self.blueprint.add_url_rule(
             '/_static/<path:path>',
             'webagg_static',
             self.handle_webagg_static,
         )
-        self.app.add_url_rule(
+        self.blueprint.add_url_rule(
             '/_images/<path:path>',
             'webagg_images',
             self.handle_webagg_images,
         )
-        self.app.add_url_rule(
+        self.blueprint.add_url_rule(
             '/mpl.js',
             'mpl_js',
             self.handle_mpl_js,
         )
-        self.app.add_url_rule(
+        self.blueprint.add_url_rule(
             '/mpl_figure.js',
             'mpl_figure_js',
             self.handle_mpl_figure_js,
         )
-        self.wrapped_figures = []
+        self.fig_blueprints = []
+
+    def init_app(self, app):
+        app.register_blueprint(self.blueprint)
 
     def figure(self, name):
         def inner(wrapped_func):
-            fig_id = len(self.wrapped_figures) + 1
-            fb = FigureBlueprint(fig_id, name, wrapped_func, self.app)
-            self.wrapped_figures.append(fb)
+            fig_id = len(self.fig_blueprints) + 1
+            fbp = FigureBlueprint(fig_id, name, wrapped_func, self.blueprint)
+            self.fig_blueprints.append(fbp)
         return inner
 
     async def handle_webagg_static(self, path):
@@ -78,7 +86,7 @@ class WebAgg:
         return response
 
     async def handle_mpl_figure_js(self):
-        figures = [await fig.get_info() for fig in self.wrapped_figures]
+        figures = [await fig.get_info() for fig in self.fig_blueprints]
         print(figures)
         js = await render_template(
             'mpl_figure.js',
@@ -89,18 +97,18 @@ class WebAgg:
         return response
 
 class FigureBlueprint:
-    def __init__(self, fig_id, name, plot, app):
+    def __init__(self, fig_id, name, plot, parent):
         self.fig_id = fig_id
         self.name = name
         self.plot = plot
-        self.app = app
+        self.parent = parent
         self.supports_binary = True
-        self.app.add_url_rule(
+        self.parent.add_url_rule(
             f'/{self.name}.<fmt>',
             f'download_{self.name}',
             self.handle_download,
         )
-        self.app.add_websocket(
+        self.parent.add_websocket(
             f'/{self.name}.ws',
             f'websocket_{self.name}',
             self.handle_websocket,
@@ -114,8 +122,11 @@ class FigureBlueprint:
             ctx.register_callbacks(tg)
 
     async def handle_download(self, fmt):
+        fig = Figure()
+        fig = await self.plot(fig)
+        manager = new_figure_manager_given_figure(self.fig_id, fig)
         buff = io.BytesIO()
-        self.manager.canvas.figure.savefig(buff, format=fmt)
+        manager.canvas.figure.savefig(buff, format=fmt)
         response = await make_response(buff.getvalue())
         try:
             response.mimetype = image_mimetypes[fmt]
@@ -124,7 +135,7 @@ class FigureBlueprint:
         return response
 
     async def get_info(self):
-        sock_name = f'websocket_{self.name}'
+        sock_name = f'{self.parent.name}.websocket_{self.name}'
         sock_uri = url_for(sock_name)
         return {'name': self.name, 'fig_id': self.fig_id, 'sock_uri': sock_uri}
 
