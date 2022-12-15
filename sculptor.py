@@ -108,7 +108,7 @@ class FigureBlueprint:
 
     async def handle_websocket(self):
         fig = Figure()
-        fig = self.plot(fig)
+        fig = await self.plot(fig)
         ctx = FigureContext(self.fig_id, fig)
         async with asyncio.TaskGroup() as tg:
             ctx.register_callbacks(tg)

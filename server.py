@@ -13,7 +13,7 @@ async def index():
     return await render_template('index.html')
 
 @sc.figure('sinusoid')
-def plot_sinusoid(fig):
+async def plot_sinusoid(fig):
     ax = fig.add_subplot()
     t = np.arange(0.0, 3.0, 0.01)
     s = np.sin(2 * np.pi * t)
@@ -21,7 +21,7 @@ def plot_sinusoid(fig):
     return fig
 
 @sc.figure('parabola')
-def plot_parabola(fig):
+async def plot_parabola(fig):
     ax = fig.add_subplot()
     t = np.arange(-1.0, 1.0, 0.01)
     s = t**2
