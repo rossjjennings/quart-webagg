@@ -28,12 +28,12 @@ class WebAgg:
         )
         self.blueprint.add_url_rule(
             '/_static/<path:path>',
-            'webagg_static',
+            'static',
             self.handle_webagg_static,
         )
         self.blueprint.add_url_rule(
             '/_images/<path:path>',
-            'webagg_images',
+            'images',
             self.handle_webagg_images,
         )
         self.blueprint.add_url_rule(
