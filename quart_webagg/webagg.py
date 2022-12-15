@@ -16,21 +16,7 @@ import json
 import os.path
 import io
 import asyncio
-
-image_mimetypes = {
-    'eps': 'application/postscript',
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'pdf': 'application/pdf',
-    'pgf': 'application/x-latex',
-    'png': 'image/png',
-    'ps': 'application/postscript',
-    'svg': 'image/svg+xml',
-    'svgz': 'image/svg+xml',
-    'tif': 'image/tiff',
-    'tiff': 'image/tiff',
-    'webp': 'image/webp',
-}
+import base64
 
 class WebAgg:
     def __init__(self):
@@ -103,11 +89,6 @@ class FigureBlueprint:
         self.plot = plot
         self.parent = parent
         self.supports_binary = True
-        self.parent.add_url_rule(
-            f'/{self.name}.<fmt>',
-            f'download_{self.name}',
-            self.handle_download,
-        )
         self.parent.add_websocket(
             f'/{self.name}.ws',
             f'websocket_{self.name}',
@@ -120,19 +101,6 @@ class FigureBlueprint:
         ctx = FigureContext(self.fig_id, fig)
         async with asyncio.TaskGroup() as tg:
             ctx.register_callbacks(tg)
-
-    async def handle_download(self, fmt):
-        fig = Figure()
-        fig = await self.plot(fig)
-        manager = new_figure_manager_given_figure(self.fig_id, fig)
-        buff = io.BytesIO()
-        manager.canvas.figure.savefig(buff, format=fmt)
-        response = await make_response(buff.getvalue())
-        try:
-            response.mimetype = image_mimetypes[fmt]
-        except KeyError:
-            response.mimetype = 'application/octet-stream'
-        return response
 
     async def get_info(self):
         sock_name = f'{self.parent.name}.websocket_{self.name}'
@@ -170,5 +138,14 @@ class FigureContext:
             print(f"Figure {self.fig_id} received JSON: {message}")
             if message['type'] == 'supports_binary':
                 self.supports_binary = message['value']
+            elif message['type'] == 'savefig':
+                buff = io.BytesIO()
+                self.manager.canvas.figure.savefig(buff, format=message['format'])
+                payload = base64.b64encode(buff.getvalue()).decode('ascii')
+                await websocket.send_json({
+                    'type': 'savefig',
+                    'format': message['format'],
+                    'data': payload,
+                })
             else:
                 self.manager.handle_json(message)
