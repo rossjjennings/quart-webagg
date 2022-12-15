@@ -36,5 +36,19 @@ if __name__ == '__main__':
 Plotting functions should accept a Matplotlib `Figure` object, do all plotting within that `Figure`, and return the same `Figure`.
 Note that `webagg.init_app(app)` must be run after all plotting functions are declared.
 To place a plot on a webpage, create a `div` element whose `id` property matches the name passed to the `webagg.figure` decorator (here, `'sinusoid'`).
+Pages containing figures should include the template `webagg_head.html` in their `<head>` section.
+The `index.html` template accompanying the above example should therefore look like
+```jinja
+<!DOCTYPE html>
+<html>
+  <head>
+    {% include 'webagg_head.html' %}
+    <title>matplotlib</title>
+  </head>
+  <body>
+    <div id="sinusoid" style="width: 640px; margin: auto"></div>
+  </body>
+</html>
+```
 
 A complete example application can be found in `example_server/`.
