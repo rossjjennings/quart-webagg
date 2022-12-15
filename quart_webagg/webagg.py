@@ -1,6 +1,7 @@
 from quart import (
     Blueprint,
     websocket,
+    current_app,
     url_for,
     render_template,
     make_response,
@@ -73,7 +74,6 @@ class WebAgg:
 
     async def handle_mpl_figure_js(self):
         figures = [await fig.get_info() for fig in self.fig_blueprints]
-        print(figures)
         js = await render_template(
             'mpl_figure.js',
             figures=figures,
@@ -120,11 +120,11 @@ class FigureContext:
         task_group.create_task(self.receive_messages())
 
     def send_json(self, content):
-        print(f"Figure {self.fig_id} sending JSON: {content}")
+        current_app.logger.debug(f"Figure {self.fig_id} sending JSON: {content}")
         self.task_group.create_task(websocket.send_json(content))
 
     def send_binary(self, blob):
-        print(f"Figure {self.fig_id} sending blob")
+        current_app.logger.debug(f"Figure {self.fig_id} sending blob")
         if self.supports_binary:
             self.task_group.create_task(websocket.send(blob))
         else:
@@ -135,7 +135,7 @@ class FigureContext:
     async def receive_messages(self):
         while True:
             message = await websocket.receive_json()
-            print(f"Figure {self.fig_id} received JSON: {message}")
+            current_app.logger.debug(f"Figure {self.fig_id} received JSON: {message}")
             if message['type'] == 'supports_binary':
                 self.supports_binary = message['value']
             elif message['type'] == 'savefig':
