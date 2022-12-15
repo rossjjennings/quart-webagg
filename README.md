@@ -11,7 +11,7 @@ Quart-WebAgg relies on [`asyncio.TaskGroup`](https://docs.python.org/3/library/a
 A simple example of using Quart-WebAgg is below:
 ```python
 from quart import Quart
-import numpy
+import numpy as np
 from quart_webagg import WebAgg
 
 app = Quart(__name__)
