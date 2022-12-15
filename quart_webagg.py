@@ -31,7 +31,7 @@ image_mimetypes = {
     'webp': 'image/webp',
 }
 
-class Sculptor:
+class WebAgg:
     def __init__(self, app):
         self.app = app
         self.app.add_url_rule(

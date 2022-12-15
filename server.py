@@ -2,16 +2,16 @@ from quart import Quart, render_template
 import numpy as np
 import matplotlib as mpl
 
-from sculptor import Sculptor
+from quart_webagg import WebAgg
 
 app = Quart(__name__)
-sc = Sculptor(app)
+webagg = WebAgg(app)
 
 @app.route('/')
 async def index():
     return await render_template('index.html')
 
-@sc.figure('sinusoid')
+@webagg.figure('sinusoid')
 async def plot_sinusoid(fig):
     ax = fig.add_subplot()
     t = np.arange(0.0, 3.0, 0.01)
@@ -19,7 +19,7 @@ async def plot_sinusoid(fig):
     ax.plot(t, s)
     return fig
 
-@sc.figure('parabola')
+@webagg.figure('parabola')
 async def plot_parabola(fig):
     ax = fig.add_subplot()
     t = np.arange(-1.0, 1.0, 0.01)
