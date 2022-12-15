@@ -1,7 +1,6 @@
 from quart import Quart, render_template
 import numpy as np
 import matplotlib as mpl
-import asyncio
 
 from sculptor import Sculptor
 
