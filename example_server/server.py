@@ -2,7 +2,7 @@ from quart import Quart, render_template
 import numpy as np
 import matplotlib as mpl
 
-from quart_webagg import WebAgg
+from quart_webagg.webagg import WebAgg
 
 app = Quart(__name__)
 webagg = WebAgg()
