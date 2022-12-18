@@ -136,16 +136,17 @@ class FigureContext:
         while True:
             message = await websocket.receive_json()
             current_app.logger.debug(f"Figure {self.fig_id} received JSON: {message}")
-            if message['type'] == 'supports_binary':
-                self.supports_binary = message['value']
-            elif message['type'] == 'savefig':
-                buff = io.BytesIO()
-                self.manager.canvas.figure.savefig(buff, format=message['format'])
-                payload = base64.b64encode(buff.getvalue()).decode('ascii')
-                await websocket.send_json({
-                    'type': 'savefig',
-                    'format': message['format'],
-                    'data': payload,
-                })
-            else:
-                self.manager.handle_json(message)
+            match message:
+                case {'type': 'supports_binary'}:
+                    self.supports_binary = message['value']
+                case {'type': 'savefig'}:
+                    buff = io.BytesIO()
+                    self.manager.canvas.figure.savefig(buff, format=message['format'])
+                    payload = base64.b64encode(buff.getvalue()).decode('ascii')
+                    await websocket.send_json({
+                        'type': 'savefig',
+                        'format': message['format'],
+                        'data': payload,
+                    })
+                case _:
+                    self.manager.handle_json(message)
