@@ -29,8 +29,9 @@ async def plot_sinusoid(fig):
     ax.plot(t, s)
     return fig
 
+webagg.init_app(app)
+
 if __name__ == '__main__':
-    webagg.init_app(app)
     app.run()
 ```
 Plotting functions should accept a Matplotlib `Figure` object, do all plotting within that `Figure`, and return the same `Figure`.
