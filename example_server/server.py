@@ -27,6 +27,7 @@ async def plot_parabola(fig):
     ax.plot(t, s)
     return fig
 
+webagg.init_app(app)
+
 if __name__ == '__main__':
-    webagg.init_app(app)
     app.run()
