@@ -60,6 +60,7 @@ Quart-WebAgg runs plotting functions within Quart's event loop. This makes it po
 
 ```python
 from quart_webagg import WebAgg
+import numpy as np
 import asyncio
 import concurrent.futures
 
