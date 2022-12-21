@@ -56,7 +56,7 @@ A complete example application can be found in `example_server/`.
 
 ## Don't block the event loop
 
-Quart-WebAgg runs plotting functions within Quart's event loop. This makes it possible for the plotting functions to call asynchronous code using the `await` keyword, but it also makes it possible for plotting code to block the event loop, preventing other asynchronous code from executing while the plot is being constructed. To avoid this, it is advisable to run CPU-bound computations in a separate thread or process, for example using `asyncio.run_in_executor()` together with the `ThreadPoolExecutor` and `ProcessPoolExecutor` provided by `concurrent.futures`. This might look like:
+Quart-WebAgg runs plotting functions within Quart's event loop. This makes it possible for the plotting functions to call asynchronous code using the `await` keyword, but it also makes it possible for plotting code to block the event loop, preventing other asynchronous code from executing while the plot is being constructed. To avoid this, it is advisable to run CPU-bound computations in a separate thread or process, for example using [`asyncio.run_in_executor()`](https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor) together with the `ThreadPoolExecutor` or `ProcessPoolExecutor` provided by [`concurrent.futures`](https://docs.python.org/3/library/concurrent.futures.html#module-concurrent.futures). This might look like:
 
 ```python
 from quart_webagg import WebAgg
