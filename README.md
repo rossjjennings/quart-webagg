@@ -53,3 +53,30 @@ The `index.html` template accompanying the above example should therefore look l
 ```
 
 A complete example application can be found in `example_server/`.
+
+## Don't block the event loop
+
+Quart-WebAgg runs plotting functions within Quart's event loop. This makes it possible for the plotting functions to call asynchronous code using the `await` keyword, but it also makes it possible for plotting code to block the event loop, preventing other asynchronous code from executing while the plot is being constructed. To avoid this, it is advisable to run CPU-bound computations in a separate thread or process, for example using `asyncio.run_in_executor()` together with the `ThreadPoolExecutor` and `ProcessPoolExecutor` provided by `concurrent.futures`. This might look like:
+
+```python
+from quart_webagg import WebAgg
+import asyncio
+import concurrent.futures
+
+webagg = WebAgg()
+
+def get_data():
+    t = np.arange(0.0, 3.0, 0.01)
+    s = np.sin(2 * np.pi * t)
+    return t, s
+
+@webagg.figure('sinusoid')
+async def plot_sinusoid(fig):
+    ax = fig.add_subplot()
+    loop = asyncio.get_running_loop()
+    with concurrent.futures.ProcessPoolExecutor() as pool:
+        t, s = await loop.run_in_executor(pool, get_data)
+    ax.plot(t, s)
+    return fig
+```
+The work done by `get_data()` in this example is most likely too small to make running it in a separate process worthwhile, but in many cases, much more involved computations may be necessary to produce a plot.
